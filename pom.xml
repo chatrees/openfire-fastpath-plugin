@@ -29,18 +29,6 @@
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
             </plugin>
-            <plugin>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-jspc-maven-plugin</artifactId>
-                <version>11.0.25</version>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.igniterealtime.openfire</groupId>
-                        <artifactId>xmppserver</artifactId>
-                        <version>${openfire.version}</version>
-                    </dependency>
-                </dependencies>
-            </plugin>  
         </plugins>              
     </build>
 

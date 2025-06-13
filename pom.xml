@@ -4,7 +4,7 @@
     <parent>
         <artifactId>plugins</artifactId>
         <groupId>org.igniterealtime.openfire</groupId>
-        <version>4.8.0</version>
+        <version>4.9.2-jakarta-200520250103</version>
     </parent>
     <groupId>org.igniterealtime.openfire.plugins</groupId>
     <artifactId>fastpath</artifactId>
@@ -32,7 +32,7 @@
             <plugin>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-jspc-maven-plugin</artifactId>
-                <version>9.2.14.v20151106</version>
+                <version>11.0.25</version>
                 <dependencies>
                     <dependency>
                         <groupId>org.igniterealtime.openfire</groupId>

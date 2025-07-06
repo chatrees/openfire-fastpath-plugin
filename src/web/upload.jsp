@@ -6,10 +6,10 @@
                  org.xmpp.packet.JID,
                  java.util.Iterator,
                  java.util.List,
-                 org.jivesoftware.openfire.fastpath.settings.chat.ChatSettingsManager, org.jivesoftware.openfire.user.UserNotFoundException, org.jivesoftware.openfire.fastpath.settings.chat.ChatSetting, org.jivesoftware.util.StringUtils, org.apache.commons.fileupload.DiskFileUpload, org.apache.commons.fileupload.FileItem, org.apache.commons.fileupload.FileUploadException"
+                 org.jivesoftware.openfire.fastpath.settings.chat.ChatSettingsManager, org.jivesoftware.openfire.user.UserNotFoundException, org.jivesoftware.openfire.fastpath.settings.chat.ChatSetting, java.util.Base64, org.apache.commons.fileupload2.jakarta.servlet6.JakartaServletDiskFileUpload, org.apache.commons.fileupload2.core.FileItem, org.apache.commons.fileupload2.core.FileUploadException"
 %>
 <%
-    DiskFileUpload upload = new DiskFileUpload();
+    JakartaServletDiskFileUpload upload = new JakartaServletDiskFileUpload();
     List items = null;
     try {
         items = upload.parseRequest(request);
@@ -63,7 +63,7 @@
  <%!
      private String encode(byte[] data) {
          try {
-             final String encodedFile = StringUtils.encodeBase64(data);
+             final String encodedFile = Base64.getEncoder().encodeToString(data);
              return encodedFile;
          }
          catch (Exception ex) {

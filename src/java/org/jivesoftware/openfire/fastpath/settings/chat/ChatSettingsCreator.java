@@ -16,19 +16,10 @@
 
 package org.jivesoftware.openfire.fastpath.settings.chat;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.jivesoftware.openfire.XMPPServer;
 import org.jivesoftware.openfire.container.Plugin;
 import org.jivesoftware.openfire.container.PluginManager;
 import org.jivesoftware.openfire.user.UserNotFoundException;
-import org.jivesoftware.util.StringUtils;
 import org.jivesoftware.xmpp.workgroup.UnauthorizedException;
 import org.jivesoftware.xmpp.workgroup.Workgroup;
 import org.jivesoftware.xmpp.workgroup.WorkgroupManager;
@@ -36,6 +27,11 @@ import org.jivesoftware.xmpp.workgroup.utils.ModelUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xmpp.packet.JID;
+
+import java.io.*;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Creates the default settings for the Web Chat UI. This includes the Web Chat UI
@@ -254,7 +250,7 @@ public class ChatSettingsCreator {
      */
     private void createImageSettings(JID workgroupJID) {
         PluginManager pluginManager = XMPPServer.getInstance().getPluginManager();
-        Plugin fastpathPlugin = pluginManager.getPlugin("fastpath");
+        Plugin fastpathPlugin = pluginManager.getPluginByName("fastpath").get();
         File fastpathPluginDirectory = pluginManager.getPluginPath(fastpathPlugin).toFile();
 
         File imagesDir = new File(fastpathPluginDirectory, "web/images");
@@ -280,7 +276,7 @@ public class ChatSettingsCreator {
                         throw new IOException("Failed to read all image bytes.");
                     }
                     stream.close();
-                    final String encodedFile = StringUtils.encodeBase64(bytes);
+                    final String encodedFile = Base64.getEncoder().encodeToString(bytes);
 
                     createImageChatSetting(workgroupJID, key,
                             ChatSettings.SettingType.image_settings, encodedFile);
@@ -419,7 +415,7 @@ public class ChatSettingsCreator {
                         throw new IOException("Failed to read all bytes.");
                     }
                     stream.close();
-                    final String encodedFile = StringUtils.encodeBase64(bytes);
+                    final String encodedFile = Base64.getEncoder().encodeToString(bytes);
 
                     createChatSetting(workgroupJID, key, ChatSettings.SettingType.image_settings,
                             encodedFile);

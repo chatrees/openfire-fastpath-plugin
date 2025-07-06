@@ -1,24 +1,23 @@
 package org.jivesoftware.openfire.fastpath;
 
-import java.io.IOException;
-
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.jivesoftware.openfire.fastpath.settings.chat.ChatSetting;
 import org.jivesoftware.openfire.fastpath.settings.chat.ChatSettings;
 import org.jivesoftware.openfire.fastpath.settings.chat.ChatSettingsManager;
 import org.jivesoftware.openfire.user.UserNotFoundException;
-import org.jivesoftware.util.StringUtils;
 import org.jivesoftware.xmpp.workgroup.Workgroup;
 import org.jivesoftware.xmpp.workgroup.WorkgroupManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xmpp.packet.JID;
+
+import java.io.IOException;
+import java.util.Base64;
 
 /**
  * A servlet that displays images.
@@ -119,6 +118,6 @@ public class ImageServlet extends HttpServlet {
             return null;
         }
 
-        return StringUtils.decodeBase64(encodedValue);
+        return Base64.getDecoder().decode(encodedValue);
     }
 }

@@ -4,11 +4,11 @@
     <parent>
         <artifactId>plugins</artifactId>
         <groupId>org.igniterealtime.openfire</groupId>
-        <version>4.8.0</version>
+        <version>5.0.1-jakarta-04072025</version>
     </parent>
     <groupId>org.igniterealtime.openfire.plugins</groupId>
     <artifactId>fastpath</artifactId>
-    <version>4.5.2-SNAPSHOT</version>
+    <version>4.5.2-jakarta-05072025</version>
     <name>Fastpath Plugin</name>
     <description>Support for managed queued chat requests, such as a support team might use.</description>
 
@@ -30,16 +30,9 @@
                 <artifactId>maven-assembly-plugin</artifactId>
             </plugin>
             <plugin>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-jspc-maven-plugin</artifactId>
-                <version>9.2.14.v20151106</version>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.igniterealtime.openfire</groupId>
-                        <artifactId>xmppserver</artifactId>
-                        <version>${openfire.version}</version>
-                    </dependency>
-                </dependencies>
+                <groupId>org.eclipse.jetty.ee9</groupId>
+                <artifactId>jetty-ee9-jspc-maven-plugin</artifactId>
+                <version>${jetty.version}</version>
             </plugin>  
         </plugins>              
     </build>
@@ -58,10 +51,10 @@
         </dependency>
         
         <dependency>
-            <groupId>commons-fileupload</groupId>
-            <artifactId>commons-fileupload</artifactId>
-            <version>1.5</version>
-        </dependency>        
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-fileupload2-jakarta-servlet6</artifactId>
+            <version>2.0.0-M4</version>
+        </dependency>
     </dependencies>
 
     <repositories>

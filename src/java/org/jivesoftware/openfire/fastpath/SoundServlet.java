@@ -16,21 +16,20 @@
 
 package org.jivesoftware.openfire.fastpath;
 
-import java.io.IOException;
-
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.jivesoftware.openfire.user.UserNotFoundException;
-import org.jivesoftware.util.StringUtils;
 import org.jivesoftware.xmpp.workgroup.Workgroup;
 import org.jivesoftware.xmpp.workgroup.WorkgroupManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xmpp.packet.JID;
+
+import java.io.IOException;
+import java.util.Base64;
 
 /**
  * Servlet that writes out sound files.
@@ -71,12 +70,12 @@ public class SoundServlet extends HttpServlet {
             if (action != null) {
                 if ("incoming".equals(action.trim())) {
                     String incomingMessage = workgroup.getProperties().getProperty("incomingSound");
-                    byte[] incomingBytes = StringUtils.decodeBase64(incomingMessage);
+                    byte[] incomingBytes = Base64.getDecoder().decode(incomingMessage);
                     response.getOutputStream().write(incomingBytes);
                 }
                 else if ("outgoing".equals(action.trim())) {
                     String outgoingMessage = workgroup.getProperties().getProperty("outgoingSound");
-                    String outgoingBytes = StringUtils.encodeBase64(outgoingMessage);
+                    String outgoingBytes = Base64.getEncoder().encodeToString(outgoingMessage.getBytes("UTF-8"));
                     response.getOutputStream().write(outgoingBytes.getBytes("UTF-8"));
                 }
             }

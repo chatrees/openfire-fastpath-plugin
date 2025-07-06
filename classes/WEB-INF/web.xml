@@ -6,7 +6,7 @@
 
     <filter>
         <filter-name>cross-origin</filter-name>
-        <filter-class>org.eclipse.jetty.servlets.CrossOriginFilter</filter-class>
+        <filter-class>org.eclipse.jetty.ee9.servlets.CrossOriginFilter</filter-class>
         <init-param>
             <param-name>allowedOrigins</param-name>
             <param-value>*</param-value>

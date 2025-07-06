@@ -16,21 +16,19 @@
 
 package org.jivesoftware.openfire.fastpath;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.*;
-
+import org.apache.tomcat.InstanceManager;
+import org.apache.tomcat.SimpleInstanceManager;
+import org.eclipse.jetty.ee9.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.jivesoftware.openfire.cluster.ClusterEventListener;
 import org.jivesoftware.openfire.cluster.ClusterManager;
 import org.jivesoftware.openfire.container.Plugin;
 import org.jivesoftware.openfire.container.PluginManager;
 import org.jivesoftware.openfire.fastpath.util.TaskEngine;
+import org.jivesoftware.openfire.http.HttpBindManager;
 import org.jivesoftware.openfire.user.UserNameManager;
 import org.jivesoftware.openfire.user.UserNameProvider;
 import org.jivesoftware.openfire.user.UserNotFoundException;
-import org.jivesoftware.openfire.http.HttpBindManager;
 import org.jivesoftware.util.JiveGlobals;
 import org.jivesoftware.xmpp.workgroup.Workgroup;
 import org.jivesoftware.xmpp.workgroup.WorkgroupManager;
@@ -40,12 +38,11 @@ import org.xmpp.component.ComponentException;
 import org.xmpp.component.ComponentManagerFactory;
 import org.xmpp.packet.JID;
 
-import org.eclipse.jetty.ee9.apache.jsp.JettyJasperInitializer;
-import org.eclipse.jetty.ee9.servlet.listener.ContainerInitializer;
-import org.eclipse.jetty.ee9.webapp.WebAppContext;
-
-import org.apache.tomcat.InstanceManager;
-import org.apache.tomcat.SimpleInstanceManager;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Collection;
 
 /**
  * Openfire Fastpath plugin.
@@ -143,9 +140,7 @@ public class FastpathPlugin implements Plugin, ClusterEventListener {
 
         context = new WebAppContext(null, pluginDirectory.getPath() + "/classes", "/webchat");
         context.setClassLoader(this.getClass().getClassLoader());
-        final List<ContainerInitializer.ServletContainerInitializerServletContextListener> initializersCRM = new ArrayList<>();
-        initializersCRM.add(ContainerInitializer.asContextListener(new JettyJasperInitializer()));
-        context.setAttribute("org.eclipse.jetty.containerInitializers", initializersCRM);
+        context.addConfiguration(new AnnotationConfiguration());
         context.setAttribute(InstanceManager.class.getName(), new SimpleInstanceManager());
         context.setWelcomeFiles(new String[]{"index.jsp"});
         HttpBindManager.getInstance().addJettyHandler(context);

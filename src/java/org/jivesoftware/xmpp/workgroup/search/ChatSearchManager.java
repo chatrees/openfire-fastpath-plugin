@@ -16,37 +16,17 @@
 
 package org.jivesoftware.xmpp.workgroup.search;
 
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.StringTokenizer;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.document.DateTools;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.*;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.search.Filter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Searcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.store.FSDirectory;
 import org.dom4j.DocumentException;
 import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
@@ -63,6 +43,21 @@ import org.jivesoftware.xmpp.workgroup.event.WorkgroupEventListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xmpp.packet.JID;
+
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * Manages the transcript search feature by defining properties of the search indexer. Each
@@ -150,7 +145,7 @@ public class ChatSearchManager implements WorkgroupEventListener {
     private Workgroup workgroup;
     private Analyzer indexerAnalyzer;
     private Path searchDirectory;
-    private Searcher searcher = null;
+    private IndexSearcher searcher = null;
     private IndexReader searcherReader = null;
     ReadWriteLock searcherLock = new ReentrantReadWriteLock();
 
@@ -178,7 +173,7 @@ public class ChatSearchManager implements WorkgroupEventListener {
      * Caches the filters for performance. The cached filters will be cleared when the index is
      * modified.
      */
-    private ConcurrentHashMap<String, Filter> cachedFilters = new ConcurrentHashMap<String, Filter>();
+    private ConcurrentHashMap<String, Query> cachedFilters = new ConcurrentHashMap<String, Query>();
 
     static {
         // Check if we need to create the parent folder
@@ -346,7 +341,7 @@ public class ChatSearchManager implements WorkgroupEventListener {
         }
         // If the analyzer is null, use the standard analyzer.
         if (analyzer == null && stopWords.size() > 0) {
-            analyzer = new StandardAnalyzer(stopWords.toArray(new String[stopWords.size()]));
+            analyzer = new StandardAnalyzer(new CharArraySet(stopWords, true));
         }
         else if (analyzer == null) {
             analyzer = new StandardAnalyzer();
@@ -486,7 +481,7 @@ public class ChatSearchManager implements WorkgroupEventListener {
                     // Check if we need to optimize the index. The index is optimized once a day
                     if ((System.currentTimeMillis() - lastOptimization.getTime()) / ONE_HOUR >
                             getOptimizationFrequency()) {
-                        writer.optimize();
+                        writer.forceMerge(1);
                         // Update the optimized date
                         lastOptimization = new Date();
                     }
@@ -544,11 +539,11 @@ public class ChatSearchManager implements WorkgroupEventListener {
      *
      * @return a Searcher that can be used to execute queries.
      */
-    public Searcher getSearcher() throws IOException {
+    public IndexSearcher getSearcher() throws IOException {
         synchronized (indexerAnalyzer) {
             if (searcherReader == null) {
-                if (searchDirectory != null && IndexReader.indexExists(searchDirectory.toFile())) {
-                    searcherReader = IndexReader.open(searchDirectory.toFile());
+                if (searchDirectory != null && DirectoryReader.indexExists(FSDirectory.open(searchDirectory))) {
+                    searcherReader = DirectoryReader.open(FSDirectory.open(searchDirectory));
                     searcher = new IndexSearcher(searcherReader);
                 }
                 else {
@@ -557,7 +552,7 @@ public class ChatSearchManager implements WorkgroupEventListener {
                         Log.warn("Search " +
                                 "directory not set, you must rebuild the index.");
                     }
-                    else if (!IndexReader.indexExists(searchDirectory.toFile())) {
+                    else if (!DirectoryReader.indexExists(FSDirectory.open(searchDirectory))) {
                         Log.warn("Search " +
                                 "directory " + searchDirectory + " does not appear to " +
                                 "be a valid search index. You must rebuild the index.");
@@ -573,11 +568,11 @@ public class ChatSearchManager implements WorkgroupEventListener {
         return indexerAnalyzer;
     }
 
-    void putFilter(String key, Filter filter) {
+    void putFilter(String key, Query filter) {
         cachedFilters.put(key, filter);
     }
 
-    Filter getFilter(String key) {
+    Query getFilter(String key) {
         return cachedFilters.get(key);
     }
 
@@ -752,7 +747,7 @@ public class ChatSearchManager implements WorkgroupEventListener {
 
             DbConnectionManager.closeConnection(pstmt, con);
         }
-        writer.optimize();
+        writer.forceMerge(1);
         writer.close();
         if (lastDate != null) {
             closeSearcherReader();
@@ -919,8 +914,7 @@ public class ChatSearchManager implements WorkgroupEventListener {
                             builder.append(jid);
                         }
                     }
-                    document.add(new Field("body", builder.toString(), Field.Store.NO,
-                            Field.Index.TOKENIZED));
+                    document.add(new TextField("body", builder.toString(), Field.Store.NO));
                     // Indicate that a message was found
                     hasMessages = true;
                 }
@@ -928,17 +922,17 @@ public class ChatSearchManager implements WorkgroupEventListener {
         }
         if (hasMessages) {
             // Add the sessionID that indentifies the chat session to the document
-            document.add (new Field("sessionID", String.valueOf(chat.getSessionID()),
-                    Field.Store.YES, Field.Index.UN_TOKENIZED));
+            document.add (new StringField("sessionID", String.valueOf(chat.getSessionID()),
+                    Field.Store.YES));
             // Add the JID of the agents involved in the chat to the document
             for (String agentJID : chat.getAgentJIDs()) {
-                document.add(new Field("agentJID", agentJID,
-                        Field.Store.YES, Field.Index.UN_TOKENIZED));
+                document.add(new StringField("agentJID", agentJID,
+                        Field.Store.YES));
             }
             // Add the date when the chat started to the document
             long date = chat.getCreationDate().getTime();
-            document.add(new Field("creationDate",  DateTools.timeToString(date, 
-                    DateTools.Resolution.DAY), Field.Store.YES, Field.Index.UN_TOKENIZED));
+            document.add(new StringField("creationDate",  DateTools.timeToString(date,
+                    DateTools.Resolution.DAY), Field.Store.YES));
 
             writer.addDocument(document);
         }
@@ -949,7 +943,8 @@ public class ChatSearchManager implements WorkgroupEventListener {
      * existing index should be used if it's found there.
      */
     private IndexWriter getWriter(boolean create) throws IOException {
-        IndexWriter writer = new IndexWriter(searchDirectory.toFile(), indexerAnalyzer, create);
+        IndexWriterConfig indexWriterConfig = new IndexWriterConfig(indexerAnalyzer);
+        IndexWriter writer = new IndexWriter(FSDirectory.open(searchDirectory), indexWriterConfig);
         return writer;
     }
 

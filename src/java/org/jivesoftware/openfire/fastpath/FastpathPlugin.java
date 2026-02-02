@@ -22,7 +22,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
-import org.eclipse.jetty.ee8.webapp.WebAppContext;
+import org.apache.tomcat.InstanceManager;
+import org.apache.tomcat.SimpleInstanceManager;
+import org.eclipse.jetty.ee9.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.server.handler.CrossOriginHandler;
 import org.jivesoftware.openfire.cluster.ClusterEventListener;
 import org.jivesoftware.openfire.cluster.ClusterManager;

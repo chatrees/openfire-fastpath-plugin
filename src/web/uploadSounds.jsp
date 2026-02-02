@@ -2,9 +2,9 @@
 <%@ page import="org.jivesoftware.xmpp.workgroup.Workgroup,
                  org.jivesoftware.xmpp.workgroup.WorkgroupManager,
                  org.jivesoftware.xmpp.workgroup.utils.ModelUtil,
-                 org.apache.commons.fileupload.DiskFileUpload,
-                 org.apache.commons.fileupload.FileItem,
-                 org.apache.commons.fileupload.FileUploadException,
+                 org.apache.commons.fileupload2.jakarta.servlet6.JakartaServletDiskFileUpload,
+                 org.apache.commons.fileupload2.core.FileItem,
+                 org.apache.commons.fileupload2.core.FileUploadException,
                  org.xmpp.packet.JID,
                  java.util.Base64,
                  java.util.Iterator,
@@ -16,7 +16,7 @@
 %>
 <%@ page import="java.util.Base64" %>
 <%
-    DiskFileUpload upload = new DiskFileUpload();
+    JakartaServletDiskFileUpload upload = new JakartaServletDiskFileUpload();
     List items = null;
     try {
         items = upload.parseRequest(request);

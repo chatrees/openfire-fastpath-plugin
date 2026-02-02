@@ -16,26 +16,20 @@
 
 package org.jivesoftware.xmpp.workgroup.spi.routers;
 
-import java.io.Reader;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.LowerCaseTokenizer;
-import org.apache.lucene.analysis.PorterStemFilter;
-import org.apache.lucene.analysis.StopFilter;
-import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.en.EnglishAnalyzer;
+import org.apache.lucene.analysis.en.PorterStemFilter;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.Hits;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.search.*;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.jivesoftware.xmpp.workgroup.Workgroup;
 import org.jivesoftware.xmpp.workgroup.request.Request;
 import org.jivesoftware.xmpp.workgroup.request.UserRequest;
@@ -43,6 +37,9 @@ import org.jivesoftware.xmpp.workgroup.routing.RequestRouter;
 import org.jivesoftware.xmpp.workgroup.utils.ModelUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * The WordMatcheRouter using Lucense index to search individual metadata as specified
@@ -129,11 +126,12 @@ public class WordMatchRouter extends RequestRouter {
         boolean foundMatch = false;
         try {
             // Create an in-memory directory.
-            RAMDirectory dir = new RAMDirectory();
+            ByteBuffersDirectory dir = new ByteBuffersDirectory();
             // Index the message.
-            IndexWriter writer = new IndexWriter(dir, analyzer, true);
+            IndexWriterConfig config = new IndexWriterConfig(analyzer);
+            IndexWriter writer = new IndexWriter(dir, config);
 
-            BooleanQuery booleanQuery = new BooleanQuery();
+            BooleanQuery.Builder booleanQueryBuilder = new BooleanQuery.Builder();
             Document doc = new Document();
 
             for (String key: requestMap.keySet()) {
@@ -148,27 +146,27 @@ public class WordMatchRouter extends RequestRouter {
                     }
 
                     // Add to Search Indexer
-                    doc.add(new Field(key, builder.toString(), Field.Store.YES,
-                            Field.Index.TOKENIZED));
+                    doc.add(new TextField(key, builder.toString(), Field.Store.YES));
 
                     QueryParser parser = new QueryParser(key, analyzer);
                     Query query = parser.parse(queryString);
-                    booleanQuery.add(query, BooleanClause.Occur.MUST);
+                    booleanQueryBuilder.add(query, BooleanClause.Occur.MUST);
                 }
             }
 
             writer.addDocument(doc);
             writer.close();
 
-            // Create a searcher, try to find a match.
-            IndexSearcher searcher = new IndexSearcher(dir);
-
-            Hits hits = searcher.search(booleanQuery);
-            // Check to see if a match was found.
-            if (hits.length() > 0) {
-                foundMatch = true;
+            try (DirectoryReader reader = DirectoryReader.open(dir)) {
+                // Create a searcher, try to find a match.
+                IndexSearcher searcher = new IndexSearcher(reader);
+                BooleanQuery booleanQuery = booleanQueryBuilder.build();
+                TopDocs topDocs = searcher.search(booleanQuery, 10);
+                // Check to see if a match was found.
+                if (topDocs.totalHits.value > 0) {
+                    foundMatch = true;
+                }
             }
-            searcher.close();
         }
         catch (Exception e) {
             Log.error(e.getMessage(), e);
@@ -182,11 +180,12 @@ public class WordMatchRouter extends RequestRouter {
      */
     private class StemmingAnalyzer extends Analyzer {
         @Override
-        public final TokenStream tokenStream(String fieldName, Reader reader) {
-            // Apply stop words and porter stemmer using a lower-case tokenizer.
-            TokenStream stream = new StopFilter(new LowerCaseTokenizer(reader),
-                StandardAnalyzer.STOP_WORDS);
-            return new PorterStemFilter(stream);
+        protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new StandardTokenizer();
+            TokenStream lowerCaseFilter = new LowerCaseFilter(tokenizer);
+            StopFilter stopFilter = new StopFilter(lowerCaseFilter, EnglishAnalyzer.ENGLISH_STOP_WORDS_SET);
+            PorterStemFilter porterStemFilter = new PorterStemFilter(stopFilter);
+            return new TokenStreamComponents(tokenizer, porterStemFilter);
         }
     }
 }

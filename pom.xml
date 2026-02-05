@@ -33,6 +33,13 @@
                 <groupId>org.eclipse.jetty.ee9</groupId>
                 <artifactId>jetty-ee9-jspc-maven-plugin</artifactId>
                 <version>${jetty.version}</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.eclipse.jdt</groupId>
+                        <artifactId>ecj</artifactId>
+                        <version>3.36.0</version> <!-- Update ECJ version -->
+                    </dependency>
+                </dependencies>
             </plugin>  
         </plugins>              
     </build>
